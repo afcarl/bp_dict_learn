@@ -1,9 +1,14 @@
 #!/usr/bin/env python
+'''
+2013-01-30 15:47:47 by Dawen Liang <dl2771@columbia.edu>
+'''
 
 import sys
 import logging
 
 import numpy as np
+import numpy.random as nr
+from scipy import linalg
 import scipy.stats as sstats
 import scipy.io as sio
 
@@ -34,7 +39,35 @@ class BPDL_Sampler(object):
             self.e0, self.f0 = 1e-6, 1e-6
 
     def _init_sampler(self, initOption, save):
-        raise NotImplementedError("Abstract class")
+        if initOption == 'Rand':
+            self.r_s, self.r_e = 1., 1. 
+            sigma_s, sigma_e = np.sqrt(1./self.r_s), np.sqrt(1./self.r_e)
+            sigma_D = np.sqrt(1./self.F)
+            self.D = nr.randn(self.F, self.K) * sigma_D
+            self.S = nr.randn(self.K, self.N) * sigma_s
+            self.Z = np.zeros((self.K, self.N), dtype=bool)
+            self.pi = 0.01 * np.ones((self.K,))
+
+        if initOption == 'SVD':
+            self.a0, self.b0 = 1, self.N/8
+            self.r_s, self.r_e = 1., 1. 
+            U, S, Vh = linalg.svd(self.X, full_matrices=False)
+            if self.F < self.K:
+                self.D = np.zeros((self.F, self.K))
+                self.D[:, 0:self.F] = U
+                self.S = np.zeros((self.K, self.N))
+                self.S[0:self.F, :] = np.dot(np.diag(S), Vh);
+            else:
+                self.D = U[0:self.F, 0:self.K]
+                self.S = np.dot(np.diag(S), Vh)
+                self.S = self.S[0:self.N, :]
+            self.Z = np.ones((self.K, self.N), dtype=bool)
+            self.pi = 0.5 * np.ones((self.K,))
+
+        self.ll[0] = self.log_likelihood()
+
+        if save:
+            self._save(0)
 
     def sample(self, maxIter, K=512, initOption='SVD', updateOption='DkZkSk',
             save=False, iter_log=True):
@@ -51,7 +84,6 @@ class BPDL_Sampler(object):
                 import time
                 start = time.time()
 
-            # order matters
             self.sample_DZS(updateOption) 
             self.sample_pi() 
             self.sample_phi()
@@ -63,6 +95,19 @@ class BPDL_Sampler(object):
             if save:
                 self._save(iter)
 
+    def sample_DZS(self, updateOption):
+        if updateOption == 'DkZkSk':
+            for k in xrange(self.K):
+                self.X[:, self.Z[k,:]] = self.X[:,self.Z[k,:]] + np.dot(self.D[:,k].reshape(self.F,1), self.S[k,self.Z[k,:]].reshape(1,-1))
+                self.sample_dk(k)
+                self.sample_zk(k)
+                self.sample_sk(k)
+
+                self.X[:,self.Z[k,:]] = self.X[:,self.Z[k,:]] - np.dot(self.D[:,k].reshape(self.F,1), self.S[k,self.Z[k,:]].reshape(1,-1))
+                
+        if updateOption == 'DZS':
+            ## TODO not implemented yet
+            pass
 
     def _save(self, iter):
         save_name = 'K{}_F{}_T_iter{}.mat'.format(self.K, self.F, iter)
@@ -88,4 +133,5 @@ class BPDL_Sampler(object):
         ll += sstats.norm.logpdf(self.X,0,sigma_e).sum()
 
         return ll
+
 

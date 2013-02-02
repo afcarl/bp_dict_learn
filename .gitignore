@@ -1,5 +1,6 @@
 *.mat
 data/*
+*.swp
 *.py[cod]
 
 # C extensions

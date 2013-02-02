@@ -1,19 +1,20 @@
 #!/usr/bin/env python
-
+'''
+2013-01-30 15:47:25 by Dawen Liang <dl2771@columbia.edu>
+'''
 import logging
 
 import numpy as np
 import numpy.random as nr
-from scipy import linalg
 
-import sampler
+import btdl_sampler
 
 logging.basicConfig(level=logging.INFO,
                     format='%(levelname)s %(name)s %(asctime)s '
                     '%(filename)s:%(lineno)d  %(message)s')
 logger = logging.getLogger('bptdl_sampler')
 
-class BPTDL_Sampler(sampler.BPDL_Sampler):
+class BPTDL_Sampler(btdl_sampler.BPDL_Sampler):
     def __init__(self, X, **kwargs):
         super(BPTDL_Sampler, self).__init__(X, **kwargs)
     
@@ -31,43 +32,13 @@ class BPTDL_Sampler(sampler.BPDL_Sampler):
             self.pi = 0.01 * np.ones((self.K,))
 
         if initOption == 'SVD':
-            self.a0, self.b0 = 1, self.N/8
-            self.r_s, self.r_e = 1., 1. 
-            U, S, Vh = linalg.svd(self.X, full_matrices=False)
-            if self.F < self.K:
-                self.D = np.zeros((self.F, self.K))
-                self.D[:, 0:self.F] = U
-                self.S = np.zeros((self.K, self.N))
-                self.S[0:self.F, :] = np.dot(np.diag(S), Vh);
-            else:
-                self.D = U[0:self.F, 0:self.K]
-                self.S = np.dot(np.diag(S), Vh)
-                self.S = self.S[0:self.N, :]
-            self.Z = np.ones((self.K, self.N), dtype=bool)
-            self.pi = 0.5 * np.ones((self.K,))
+            super(BPTDL_Sampler, self)._init_sampler(initOption, save)
+            return
 
         self.ll[0] = self.log_likelihood()
 
         if save:
             self._save(0)
-
-    def sample_DZS(self, updateOption):
-        if updateOption == 'DkZkSk':
-            for k in xrange(self.K):
-                self.X[:,self.Z[k,:]] = self.X[:,self.Z[k,:]] + np.dot(self.D[:,k].reshape(self.F,1), self.S[k,self.Z[k,:]].reshape(1,-1))
-                #Sample Dk
-                self.sample_dk(k)
-                #Sample Zk
-                self.sample_zk(k)
-                #Sample Sk
-                self.sample_sk(k)
-
-                self.X[:,self.Z[k,:]] = self.X[:,self.Z[k,:]] - np.dot(self.D[:,k].reshape(self.F,1), self.S[k,self.Z[k,:]].reshape(1,-1))
-                
-        if updateOption == 'DZS':
-            self.sample_D()
-            self.sample_Z()
-            self.sample_S()
 
     def sample_D(self):
         print 'Sampling D...'
@@ -86,7 +57,6 @@ class BPTDL_Sampler(sampler.BPDL_Sampler):
         print 'Sampling Z...'
         for k in xrange(self.K):
             self.sample_zk(k)
-
 
     def sample_zk(self, k):
         Sk = self.S[k,:]
@@ -138,6 +108,7 @@ class BPTDL_Sampler(sampler.BPDL_Sampler):
         enew = self.e0 + 0.5*self.F*self.N
         fnew = self.f0 + 0.5*np.sum(self.X**2)
         self.r_e = nr.gamma(enew, scale=1./fnew)
+
 
 
 
