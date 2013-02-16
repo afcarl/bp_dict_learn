@@ -7,16 +7,17 @@ import logging
 import numpy as np
 import numpy.random as nr
 
-import btdl_sampler
+import bpdl_sampler
 
+#logging.basicConfig(filename='bptdl.log', level=logging.INFO,
 logging.basicConfig(level=logging.INFO,
                     format='%(levelname)s %(name)s %(asctime)s '
                     '%(filename)s:%(lineno)d  %(message)s')
-logger = logging.getLogger('bptdl_sampler')
 
-class BPTDL_Sampler(btdl_sampler.BPDL_Sampler):
-    def __init__(self, X, **kwargs):
-        super(BPTDL_Sampler, self).__init__(X, **kwargs)
+class BPTDL_Sampler(bpdl_sampler.BPDL_Sampler):
+    def __init__(self, **kwargs):
+        self._parse_args(**kwargs)
+        self.logger = logging.getLogger('bptdl_sampler')
     
     def _init_sampler(self, initOption, save):
         if initOption == 'Rand':
@@ -36,42 +37,9 @@ class BPTDL_Sampler(btdl_sampler.BPDL_Sampler):
             return
 
         self.ll[0] = self.log_likelihood()
-
         if save:
             self._save(0)
-
-    def sample_D(self):
-        print 'Sampling D...'
-        for k in xrange(self.K):
-            self.sample_dk(k)
-        
-    def sample_dk(self, k):
-        sigma_dk =1./(self.F+self.r_e*(self.S[k,self.Z[k,:]]**2).sum()) 
-        mu_D = (self.r_e*sigma_dk) * np.dot(self.X[:,self.Z[k,:]],self.S[k,self.Z[k,:]])
-        
-        self.D[:,k] = nr.randn(self.F) * np.sqrt(sigma_dk) + mu_D
-        logger.debug('Sample d_{} from normal distribution with mean = {} and '
-                'variance {}'.format(k, mu_D, sigma_dk))
-
-    def sample_Z(self):
-        print 'Sampling Z...'
-        for k in xrange(self.K):
-            self.sample_zk(k)
-
-    def sample_zk(self, k):
-        Sk = self.S[k,:]
-        Sk[~self.Z[k,:]] = nr.randn(self.N-self.Z[k,:].sum())*np.sqrt(1./self.r_s)
-        DTD = np.dot(self.D[:,k], self.D[:,k])
-        tmp = -0.5*self.r_e*(Sk**2 * DTD - 2*Sk*np.dot(self.X.T, self.D[:,k]))
-        tmp = np.exp(tmp) * self.pi[k]
-        self.Z[k,:] = nr.rand(self.N) > (1-self.pi[k])/(tmp+1-self.pi[k])
-
-        
-    def sample_S(self): 
-        print 'Sampling S...'
-        for k in xrange(self.K):
-            self.sample_sk(k)
-    
+ 
     def sample_sk(self, k):
         # TODO: please speed up
         DTD = np.dot(self.D[:,k], self.D[:,k])
@@ -93,22 +61,10 @@ class BPTDL_Sampler(btdl_sampler.BPDL_Sampler):
         else:
             self.S[k,i] = 0
 
-    def sample_pi(self):
-        sumZ = self.Z.sum(axis=1)
-        #self.pi = nr.beta(self.a0/self.K + sumZ, self.b0*(self.K-1)/self.K + self.N - sumZ)
-        self.pi = nr.beta(self.a0 + sumZ, self.b0 + self.N - sumZ)
-
-    def sample_phi(self):
+    def sample_rs(self):
         cnew = self.c0 + 0.5*self.K*self.N
         diffs = np.hstack((self.S[:,0].reshape(self.K,1), np.diff(self.S)))
         #dnew = self.d0 + 0.5*np.sum(diffs**2)
         dnew = self.d0 + 0.5*np.sum(diffs**2) + 0.5*(self.K*self.N - self.Z.sum())*(1./self.r_s)
         self.r_s = nr.gamma(cnew, scale=1./dnew)
-
-        enew = self.e0 + 0.5*self.F*self.N
-        fnew = self.f0 + 0.5*np.sum(self.X**2)
-        self.r_e = nr.gamma(enew, scale=1./fnew)
-
-
-
 
