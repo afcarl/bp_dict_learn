@@ -1,6 +1,9 @@
 *.mat
 data/*
 *.swp
+*.eps
+*.png
+*.log
 *.py[cod]
 
 # C extensions

@@ -9,8 +9,8 @@ import numpy.random as nr
 
 import bpdl_sampler
 
-#logging.basicConfig(filename='bptdl.log', level=logging.INFO,
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(filename='bptdl.log', level=logging.INFO,
+#logging.basicConfig(level=logging.INFO,
                     format='%(levelname)s %(name)s %(asctime)s '
                     '%(filename)s:%(lineno)d  %(message)s')
 

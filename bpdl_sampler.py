@@ -12,8 +12,8 @@ from scipy import linalg
 import scipy.stats as sstats
 import scipy.io as sio
 
-#logging.basicConfig(filename='bpdl.log', level=logging.INFO,
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(filename='bpdl.log', level=logging.INFO,
+#logging.basicConfig(level=logging.INFO,
                     format='%(levelname)s %(name)s %(asctime)s '
                     '%(filename)s:%(lineno)d  %(message)s')
 
@@ -108,7 +108,6 @@ class BPDL_Sampler(object):
                 self._save(iter)
 
     def sample_DZS(self, updateOption):
-        print 'Sample DZS...'
         if updateOption == 'DkZkSk':
             for k in xrange(self.K):
                 self.X[:,self.Z[k,:]] = self.X[:,self.Z[k,:]] + np.dot(self.D[:,k].reshape(self.F,1), self.S[k,self.Z[k,:]].reshape(1,-1))
