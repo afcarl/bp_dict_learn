@@ -9,8 +9,8 @@ class Audio_DL(object):
     def __init__(self):
         pass
 
-    def process(self, x, sr, n_fft=512, load_mat=False, filename='', log=False, norm_option='', iter=200, K=1024, dl=bts.BPTDL_Sampler(), visualize=True):
-        self.Xc = librosa.stft(x, sr=sr, n_fft=n_fft)
+    def process(self, x, sr, n_fft=512, hop_length=256, load_mat=False, filename='', log=False, norm_option='', iter=200, K=1024, dl=bts.BPTDL_Sampler(), visualize=True):
+        self.Xc = librosa.stft(x, n_fft=n_fft, hop_length=hop_length)
         X = np.abs(self.Xc)
         ## Configure
         self.log = log
@@ -46,8 +46,8 @@ class Audio_DL(object):
         den = np.dot(self.dl.D[:,sidx[:L]], self.dl.Z[sidx[:L],:]*self.dl.S[sidx[:L],:])
         den[den==0] += 1e-6
         for l in xrange(L): 
-            XL = self.Xc * np.dot(self.dl.D[:,sidx[l]].reshape(-1,1), self.dl.Z[sidx[l],:]*self.dl.S[sidx[l],:].reshape(1,-1))/den
-            xl.append(librosa.istft(XL, n_fft=self.n_fft))
+            XL = self.Xc * np.outer(self.dl.D[:,sidx[l]], self.dl.Z[sidx[l],:]*self.dl.S[sidx[l],:])/den
+            xl.append(librosa.istft(XL, n_fft=self.n_fft, hop_length=hop_length, hann_w=0))
         if save:
             sio.savemat('xl.mat', {'xl':np.array(xl)})
         return np.array(xl)
