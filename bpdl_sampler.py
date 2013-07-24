@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 '''
-2013-01-30 15:47:47 by Dawen Liang <dl2771@columbia.edu>
+Beta-process dictionary learning with Gibbs sampler
+
+Python translation of the MATLAB code as in:
+    Non-Parametric Bayesian Dictionary Learning for Sparse Image 
+    Representations
+    by Mingyuan Zhou et al. in NIPS 2009
+
+CREATED: 2013-01-30 15:47:47 by Dawen Liang <dl2771@columbia.edu>
 '''
 
 import sys

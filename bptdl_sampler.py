@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 '''
+
+Beta-process time-dependent dictionary learning with Gibbs sampler
+
 CREATED: 2013-01-30 15:47:25 by Dawen Liang <dl2771@columbia.edu>
 '''
 import logging
